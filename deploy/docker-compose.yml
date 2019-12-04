@@ -1,0 +1,55 @@
+version: '3.7'
+
+services:
+  pushgateway:
+    image: ${IMAGE_NAME:-prom/pushgateway}:${IMAGE_TAG:-latest}
+    command:
+      - --web.listen-address=:${PORT}
+      - --web.telemetry-path=${METRICS_PATH}
+      - --persistence.file=${DATA_PATH}/metrics
+      - --persistence.interval=${PERSISTENCE_INTERVAL}
+      - --log.level=${LOG_LEVEL}
+    networks:
+      metric-net:
+      traefik-net:
+    volumes:
+      - data-vol:${DATA_PATH}
+    deploy:
+      mode: replicated
+      replicas: ${REPLICAS:-1}
+      restart_policy:
+        delay: ${RESTART_DELAY:-10s}
+      update_config:
+        delay: ${UPDATE_DELAY:-1m}
+      labels:
+        traefik.http.routers.pushgateway.entrypoints: ${TRAEFIK_ENTRYPOINT:-https}
+        traefik.http.routers.pushgateway.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-default}
+        traefik.http.routers.pushgateway.rule: Host(`${TRAEFIK_SUBDOMAIN:-pushgateway}.${TRAEFIK_DOMAIN}`)
+        traefik.http.middlewares.pushgateway-auth.basicauth.users: ${TRAEFIK_AUTH}
+        traefik.http.routers.pushgateway.middlewares: pushgateway-auth
+        traefik.http.services.pushgateway.loadbalancer.server.port: ${PORT}
+      resources:
+        limits:
+          cpus: '${RESOURCES_LIMITS_CPUS:-0.1}'
+          memory: ${RESOURCES_LIMITS_MEMORY:-32M}
+        reservations:
+          cpus: '${RESOURCES_RESERVATIONS_CPUS:-0.001}'
+          memory: ${RESOURCES_RESERVATIONS_MEMORY:-16M}
+
+networks:
+  metric-net:
+    name: ${METRIC_NET_NAME:-metric-net}
+    external: true
+
+  traefik-net:
+    name: ${TRAEFIK_NET_NAME:-traefik-net}
+    external: true
+
+volumes:
+  data-vol:
+    name: ${DATA_VOL_NAME:-pushgateway-vol}
+    driver: ${DATA_VOL_DRIVER:-local}
+    driver_opts:
+      type: ${DATA_VOL_TYPE:-nfs}
+      o: ${DATA_VOL_OPTIONS}
+      device: ${DATA_VOL_DEVICE:-:/pushgateway-vol/}
