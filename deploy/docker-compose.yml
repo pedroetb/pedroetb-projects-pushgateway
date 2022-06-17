@@ -1,4 +1,4 @@
-version: '3.7'
+version: '3.9'
 
 services:
   pushgateway:
@@ -24,7 +24,6 @@ services:
       labels:
         traefik.enable: 'true'
         traefik.http.routers.pushgateway.entrypoints: ${TRAEFIK_ENTRYPOINT:-https}
-        traefik.http.routers.pushgateway.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-default}
         traefik.http.routers.pushgateway.rule: Host(`${TRAEFIK_SUBDOMAIN:-pushgateway}.${TRAEFIK_DOMAIN}`)
         traefik.http.middlewares.pushgateway-auth.basicauth.users: ${TRAEFIK_AUTH}
         traefik.http.routers.pushgateway.middlewares: pushgateway-auth
@@ -50,9 +49,9 @@ networks:
 
 volumes:
   data-vol:
-    name: ${DATA_VOL_NAME:-pushgateway-vol}
-    driver: ${DATA_VOL_DRIVER:-local}
+    name: ${DATA_VOL_NAME}
+    driver: local
     driver_opts:
-      type: ${DATA_VOL_TYPE:-nfs4}
-      o: ${DATA_VOL_OPTIONS}
-      device: ${DATA_VOL_DEVICE:-:/pushgateway-vol/}
+      type: ${VOL_TYPE}
+      o: addr=${VOL_ADDR},${VOL_OPTS}
+      device: ${DATA_VOL_DEVICE}
